@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: validator
+  namespace: keti-opencsd
+  labels:
+    name: validator
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 40000
+      targetPort: 40000
+      nodePort: 30000
+      protocol: TCP
+    - name: qemu
+      port: 40001
+      targetPort: 40001
+      nodePort: 30001
+      protocol: TCP
+  selector:
+    app: validator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: validator
+  namespace: keti-opencsd
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: validator
+  namespace: keti-opencsd
+subjects:
+  - kind: ServiceAccount
+    name: validator
+    namespace: keti-opencsd
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: validator
+  name: validator
+  namespace: keti-opencsd
+spec:
+  selector:
+    matchLabels:
+      app: validator
+  template:
+    metadata:
+      labels:
+        app: validator
+      name: validator
+    spec:
+      nodeSelector:
+        key: worker
+      serviceAccountName: validator
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: validator
+          image: ketidevit2/validator:v1.0
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: tz-config
+              mountPath: /etc/localtime
+            - name: config
+              mountPath: /root/.kube/
+          resources:
+            limits:
+              memory: "200Mi"
+            requests:
+              memory: "200Mi"
+          env:
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: CLUSTER_MASTER_IP
+              value: "10.0.4.87"
+      volumes:
+        - name: tz-config
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Seoul
+        - name: config
+          hostPath:
+            path: /root/.kube

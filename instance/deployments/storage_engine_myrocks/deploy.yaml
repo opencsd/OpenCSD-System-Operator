@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-engine-instance
+  namespace: rtest
+  labels:
+    name: storage-engine-instance
+spec:
+  type: NodePort
+  ports:
+    - name: interface-module
+      port: 40200
+      targetPort: 40200
+      nodePort: 32200
+      protocol: TCP
+    - name: myrocks
+      port: 3306
+      targetPort: 3306
+      nodePort: 32306
+      protocol: TCP
+    - name: interface-module-http
+      port: 40205
+      targetPort: 40205
+      nodePort: 32205
+      protocol: TCP
+  selector:
+    app: storage-engine-instance
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: storage-engine-instance
+  namespace: rtest
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: storage-engine-instance
+  name: storage-engine-instance
+  namespace: rtest
+spec:
+  selector:
+    matchLabels:
+      app: storage-engine-instance
+  template:
+    metadata:
+      labels:
+        app: storage-engine-instance
+      name: storage-engine-instance
+    spec:
+      nodeSelector:
+        key: worker
+      serviceAccountName: storage-engine-instance
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: storage-engine-interface
+          image: ketidevit2/storage-engine-interface:v3.3
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: tz-config
+              mountPath: /etc/localtime
+            - name: config
+              mountPath: /root/.kube/
+          resources:
+            requests:
+              memory: "200Mi"
+          env:
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: SE_OFFLOADING_NODE_PORT
+              value: "30201"
+            - name: SE_MERGING_NODE_PORT
+              value: "30204"
+            - name: SE_MONITORING_NODE_PORT
+              value: "30203"
+        - env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "ketilinux"
+            - name: INIT_ROCKSDB
+              value: "yes"
+          image: percona:5.7.43
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 0
+          name: myrocks
+          ports:
+            - containerPort: 3306
+          resources: {}
+          volumeMounts:
+            - name: myrocks-cm
+              mountPath: /etc/mysql
+            - name: myrocks-data
+              mountPath: /var/lib/mysql
+            - name: sql-sst-data
+              mountPath: /mnt/sql_to_sst
+      volumes:
+        - name: tz-config
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Seoul
+        - name: config
+          hostPath:
+            path: /root/.kube
+        - name: myrocks-cm
+          configMap:
+            name: myrocks-cm
+        - name: sql-sst-data
+          hostPath:
+            path: /mnt/sql_to_sst
+  volumeClaimTemplates:         # 파드 하나당 pvc 하나가 따로 만들어짐
+  - metadata:
+      name: myrocks-data
+    spec:
+      storageClassName: "nfs-client"    # 생성한 스토리지 클래스 연결
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: 5Gi

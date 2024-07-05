@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myrocks-cm
+  namespace: rtest
+  labels:
+    app: storage-engine-interface
+data:
+   my.cnf: |
+     [mysqld]
+     user=mysql
+     default-tmp-storage-engine=MyISAM
+     #default-storage-engine=rocksdb #PV 새로 할당 받을 땐 주석 처리
