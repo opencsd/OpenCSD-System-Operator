@@ -54,7 +54,7 @@ spec:
       name: query-engine-instance
     spec:
       nodeSelector:
-        key: worker
+        layer: operator
       serviceAccountName: query-engine-instance
       imagePullSecrets:
         - name: regcred

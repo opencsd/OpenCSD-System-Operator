@@ -73,7 +73,7 @@ spec:
         app: instance-metric-db
     spec:
       nodeSelector:
-        key: worker
+        layer: operator
       containers:
         - env:
             - name: INFLUXDB

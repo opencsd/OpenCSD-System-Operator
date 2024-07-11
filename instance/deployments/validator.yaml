@@ -59,7 +59,7 @@ spec:
       name: validator
     spec:
       nodeSelector:
-        key: worker
+        layer: operator
       serviceAccountName: validator
       imagePullSecrets:
         - name: regcred

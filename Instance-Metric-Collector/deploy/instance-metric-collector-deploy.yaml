@@ -15,7 +15,8 @@ spec:
         name: instance-metric-collector
         namespace: system-operator
     spec:
-      serviceAccountName: instance-metric-collector
+      nodeSelector:
+        layer: operator
       imagePullSecrets:
         - name: regcred
       containers:
@@ -48,8 +49,6 @@ spec:
               name: metric-power
             - mountPath: /mnt/cpu
               name: metric-cpu-tick
-      nodeSelector:
-        key: worker
       volumes:
         - name: metric-power
           hostPath:
