@@ -113,6 +113,8 @@ spec:
           env:
             - name: LOG_LEVEL
               value: "INFO"
+            - name: OPENCSD_CLUSTER_MASTER_IP
+              value: "10.0.4.87"
             - name: SE_OFFLOADING_NODE_PORT
               value: "30201"
             - name: SE_MERGING_NODE_PORT
@@ -133,6 +135,8 @@ spec:
           env:
             - name: LOG_LEVEL
               value: "INFO"
+            - name: OPENCSD_CLUSTER_MASTER_IP
+              value: "10.0.4.87"
             - name: SE_MONITORING_NODE_PORT
               value: "30203"
             - name: CSD_IDENTIFIER_PORT
@@ -165,6 +169,8 @@ spec:
           env:
             - name: LOG_LEVEL
               value: "INFO"
+            - name: OPENCSD_CLUSTER_MASTER_IP
+              value: "10.0.4.87"
             - name: LBA2PBA_MANAGER_PORT
               value: "40302"
             - name: WAL_MANAGER_PORT
