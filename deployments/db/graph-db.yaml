@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: graphdb-dbms-svc
+  namespace: keti-opencsd # 가변
+spec:
+  ports:
+    - name: browser
+      port: 7474       # Neo4j Browser Port
+      targetPort: 7474
+    - name: bolt
+      port: 7687       # Neo4j Bolt Port
+      targetPort: 7687
+  selector:
+    app: graphdb
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: graphdb
+  namespace: keti-opencsd # 가변
+spec:
+  replicas: 1
+  serviceName: graphdb-dbms-svc
+  selector:
+    matchLabels:
+      app: graphdb
+  template:
+    metadata:
+      labels:
+        app: graphdb
+        tier: opencsd
+    spec:
+      nodeSelector:
+        layer: operation
+      containers:
+        - name: neo4j
+          image: neo4j:5.8
+          ports:
+            - containerPort: 7474  # HTTP Browser
+            - containerPort: 7687  # Bolt Protocol
+          env: # 가변
+            - name: NEO4J_AUTH
+              value: neo4j/neo4jpass  # 사용자 지정 인증 정보
+          volumeMounts:
+            - name: graphdb-data
+              mountPath: /data
+            - name: graphdb-logs
+              mountPath: /logs
+            - name: graphdb-import
+              mountPath: /import
+      volumes:
+        - name: graphdb-data
+          nfs:
+            server: 10.0.4.82
+            path: /mnt/temp/graphdb/data
+        - name: graphdb-logs
+          nfs:
+            server: 10.0.4.82
+            path: /mnt/temp/graphdb/logs
+        - name: graphdb-import
+          nfs:
+            server: 10.0.4.82
+            path: /mnt/temp/graphdb/import

@@ -1,40 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: query-engine-instance
-  namespace: OPENCSD_NAMESPACE
-  labels:
-    name: query-engine-instance
+  name: query-engine-instance-svc
+  namespace: keti-opencsd # 네임스페이스 가변
 spec:
   type: NodePort
   ports:
-  - name: http
-    port: 40100
-    targetPort: 40100
-    nodePort: 30100
+  - port: 40100
+    targetPort: 40100 
     protocol: TCP
+    nodePort: 30100 # 노드포트(고유값) 가변
   selector:
     app: query-engine-instance
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: query-engine-instance
-  namespace: OPENCSD_NAMESPACE
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: query-engine-instance
-  namespace: OPENCSD_NAMESPACE
-subjects:
-- kind: ServiceAccount
-  name: query-engine-instance
-  namespace: OPENCSD_NAMESPACE
-roleRef:
-  kind: ClusterRole
-  name: cluster-admin
-  apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -42,7 +19,7 @@ metadata:
   labels:
     app: query-engine-instance
   name: query-engine-instance
-  namespace: OPENCSD_NAMESPACE
+  namespace: keti-opencsd # 네임스페이스 가변
 spec:
   selector:
     matchLabels:
@@ -51,40 +28,33 @@ spec:
     metadata:
       labels:
         app: query-engine-instance
+        tier : opencsd
       name: query-engine-instance
     spec:
       nodeSelector:
-        key: worker
-      serviceAccountName: query-engine-instance
+        layer: operation
       imagePullSecrets:
         - name: regcred
       containers:
         - name: query-engine
-          image: ketidevit2/query-engine-instance:v1.0
+          image: ketidevit2/query-engine-instance:v3.0
           imagePullPolicy: Always
           volumeMounts:
             - name: tz-config
               mountPath: /etc/localtime
-            - name: config
-              mountPath: /root/.kube/  
-          resources:
-            limits:
-              memory: "200Mi"
+          resources: # 가변
             requests:
-              memory: "200Mi"
+              memory: "128Mi"
+              cpu: "250m"    
+            limits:
+              memory: "1Gi" 
+              cpu: "1" 
           env:
           - name: LOG_LEVEL
             value: "INFO"
-          - name: QUERY_ENGINE_POD_PORT
-            value: "40100"
-          - name: SE_INTERFACE_CONTAINER_POD_PORT
-            value: "30200"
-          - name : CLUSTER_MASTER_IP
-            value: "10.0.4.87"
+          - name: STORAGE_ENGINE_DNS
+            value: "storage-engine-instance-svc.keti-opencsd.svc.cluster.local:40200" # 네임스페이스 가변
       volumes:
         - name: tz-config
           hostPath:
             path: /usr/share/zoneinfo/Asia/Seoul
-        - name: config
-          hostPath:
-            path: /root/.kube

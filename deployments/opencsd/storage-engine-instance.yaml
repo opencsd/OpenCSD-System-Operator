@@ -1,80 +1,29 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: storage-engine-instance
-  namespace: OPENCSD_NAMESPACE
-  labels:
-    name: storage-engine-instance
+  name: storage-engine-instance-svc
+  namespace: keti-opencsd # 가변
 spec:
-  type: NodePort
   ports:
-  - name: interface-container
-    port: 40200
+  - port: 40200
     targetPort: 40200
-    nodePort: 30200
-    protocol: TCP
-  - name: interface-container-http
-    port: 40205
-    targetPort: 40205
-    nodePort: 30205
-    protocol: TCP
-  - name: offloading-container
-    port: 40201
-    targetPort: 40201
-    nodePort: 30201
-    protocol: TCP
-  - name: offloading-container-http
-    port: 40206
-    targetPort: 40206
-    nodePort: 30206
-    protocol: TCP
-  - name: merging-container
-    port: 40202
-    targetPort: 40202
-    nodePort: 30202
-    protocol: TCP
-  - name: merging-container-csd
-    port: 40204
-    targetPort: 40204
-    nodePort: 30204
-    protocol: TCP
-  - name: merging-container-http
-    port: 40207
-    targetPort: 40207
-    nodePort: 30207
-    protocol: TCP
-  - name: monitoring-container
-    port: 40203
-    targetPort: 40203
-    nodePort: 30203
-    protocol: TCP
-  - name: monitoring-container-http
-    port: 40208
-    targetPort: 40208
-    nodePort: 30208
     protocol: TCP
   selector:
     app: storage-engine-instance
 ---
 apiVersion: v1
-kind: ServiceAccount
+kind: Service
 metadata:
-  name: storage-engine-instance
-  namespace: OPENCSD_NAMESPACE
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: storage-engine-instance
-  namespace: OPENCSD_NAMESPACE
-subjects:
-- kind: ServiceAccount
-  name: storage-engine-instance
-  namespace: OPENCSD_NAMESPACE
-roleRef:
-  kind: ClusterRole
-  name: cluster-admin
-  apiGroup: rbac.authorization.k8s.io
+  name: storage-engine-dbms-svc
+  namespace: keti-opencsd # 가변
+spec:
+  ports:
+  - name: main
+    port: 3306
+    targetPort: 3306
+    protocol: TCP
+  selector:
+    app: storage-engine-instance
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -82,7 +31,7 @@ metadata:
   labels:
     app: storage-engine-instance
   name: storage-engine-instance
-  namespace: OPENCSD_NAMESPACE
+  namespace: keti-opencsd # 가변
 spec:
   selector:
     matchLabels:
@@ -91,74 +40,92 @@ spec:
     metadata:
       labels:
         app: storage-engine-instance
+        tier : opencsd
       name: storage-engine-instance
     spec:
       nodeSelector:
-        key: worker
-      serviceAccountName: storage-engine-instance
+        layer: operation
       imagePullSecrets:
         - name: regcred
       containers:
-        - name: interface-container
-          image: ketidevit2/interface-container:v1.0
+        - name: interface-module
+          image: ketidevit2/storage-engine-interface:v3.0
           imagePullPolicy: Always
           volumeMounts:
             - name: tz-config
               mountPath: /etc/localtime
-            - name: config
-              mountPath: /root/.kube/  
-          resources:
+          resources: # 가변
             requests:
-              memory: "200Mi"
+              memory: "128Mi"
+              cpu: "250m"    
+            limits:
+              memory: "1Gi" 
+              cpu: "1" 
           env:
           - name: LOG_LEVEL
             value: "Info"
-        - name: offloading-container
-          image: ketidevit2/offloading-container:v1.0
+        - name: offloading-module
+          image: ketidevit2/offloading-module:v3.0
           imagePullPolicy: Always
           volumeMounts:
             - name: tz-config
               mountPath: /etc/localtime
-            - name: config
-              mountPath: /root/.kube/  
-          resources:
+          resources: # 가변
             requests:
-              memory: "200Mi"
+              memory: "128Mi"
+              cpu: "250m"    
+            limits:
+              memory: "1Gi" 
+              cpu: "1" 
           env:
           - name: LOG_LEVEL
             value: "INFO"
-          - name: SE_MERGING_CONTAINER_POD_PORT
-            value: "30204"
-        - name: merging-container
-          image: ketidevit2/merging-container:v1.0
+          - name: STORAGE_NODE_IP
+            value: "10.0.4.83" # 가변
+        - name: merging-module
+          image: ketidevit2/merging-module:v3.0
           imagePullPolicy: Always
           volumeMounts:
             - name: tz-config
               mountPath: /etc/localtime
-            - name: config
-              mountPath: /root/.kube/  
-          resources:
+          resources: # 가변
             requests:
-              memory: "200Mi"
+              memory: "1Gi"
+              cpu: "1"    
+            limits:
+              memory: "50Gi" 
+              cpu: "3" 
           env:
           - name: LOG_LEVEL
             value: "INFO"
-          - name: SE_MERGING_CONTAINER_POD_PORT
-            value: "30204"
-        - name: monitoring-container
-          image: ketidevit2/monitoring-container:v1.0
+        - name: myrocks
+          image: percona:5.7.43
           imagePullPolicy: Always
+          securityContext:
+            runAsUser: 999
+          ports:
+            - containerPort: 3306
+          resources: # 가변
+            requests:
+              memory: "1G"
+              cpu: "200m"
+            limits:
+              memory: "10G"
+              cpu: "500m"
+          env: # 가변
+            - name: MYSQL_ROOT_PASSWORD
+              value: keti
+            - name: MYSQL_DATABASE
+              value: testdb
+            - name: INIT_ROCKSDB
+              value: "yes"
           volumeMounts:
+            - name: opencsd-csd-glusterfs
+              mountPath: /var/lib/mysql
+            - name: myrocks-cm
+              mountPath: /etc/mysql
             - name: tz-config
               mountPath: /etc/localtime
-            - name: config
-              mountPath: /root/.kube/  
-          resources:
-            requests:
-              memory: "200Mi"
-          env:
-          - name: LOG_LEVEL
-            value: "Info"
       volumes:
         - name: tz-config
           hostPath:
@@ -166,3 +133,27 @@ spec:
         - name: config
           hostPath:
             path: /root/.kube
+        - name: opencsd-csd-glusterfs # 볼륨명: opencsd-{volume name}
+          nfs: # 가변
+            server: 10.0.4.83 # 마운팅 하려는 서버의 /etc/exports 에서 nfs 설정
+            path: /mnt/gluster/client/keti-opencsd  # 해당 서버 권한 확인
+        - name: myrocks-cm
+          configMap:
+            name:  mysql-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: keti-opencsd # 가변
+  labels:
+    app: storage-engine-instance
+data:
+   my.cnf: | # 전달받은 인자로 내용 구성
+     [mysqld]
+     user=mysql
+     plugin-load-add = ha_rocksdb.so
+     default-storage-engine=rocksdb
+     
+     
+

@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-dbms-svc
+  namespace: keti-mysql # 가변
+spec:
+  ports:
+    - name: main
+      port: 3306
+      targetPort: 3306
+      protocol: TCP
+  selector:
+    app: mysql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: keti-mysql # 가변
+spec:
+  replicas: 1
+  serviceName: mysql-dbms-svc
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+        tier: opencsd
+    spec:
+      nodeSelector:
+        key: worker
+      containers:
+        - env:
+            - name: MYSQL_DATABASE
+              value: keti_opencsd
+            - name: MYSQL_PASSWORD
+              value: ketilinux
+            - name: MYSQL_ROOT_PASSWORD
+              value: ketilinux
+            - name: MYSQL_USER
+              value: keti
+          image: percona:5.7.43
+          name: mysql
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: opencsd-ssd-lvm
+              mountPath: /var/lib/mysql
+            - name: myrocks-cm
+              mountPath: /etc/mysql
+      volumes:
+        - name: opencsd-ssd-lvm
+          nfs:
+            server: 10.0.4.82
+            path: /mysql_volume/keti-mysql
+        - name: mysql-config
+          configMap:
+            name: myrocks-cm
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: keti-mysql # 가변
+  labels:
+    app: mysql
+data:
+   my.cnf: | # 전달받은 인자로 내용 구성
+     [mysqld]
+     user=mysql
+     plugin-load-add = ha_rocksdb.so
+     default-storage-engine=rocksdb
