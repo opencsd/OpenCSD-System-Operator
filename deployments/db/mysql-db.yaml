@@ -54,7 +54,7 @@ spec:
         - name: opencsd-ssd-lvm
           nfs:
             server: 10.0.4.82
-            path: /mysql_volume/keti-mysql
+            path: /mnt/lvm/keti-mysql
         - name: mysql-config
           configMap:
             name: myrocks-cm

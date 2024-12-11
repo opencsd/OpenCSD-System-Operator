@@ -11,6 +11,10 @@ spec:
     port: 40000
     targetPort: 40000
     protocol: TCP
+  - name: qemu
+    port: 40001
+    targetPort: 40001
+    protocol: TCP
   selector:
     app: validator
 ---
