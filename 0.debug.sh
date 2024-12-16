@@ -11,7 +11,6 @@ elif [ "$1" == "i" ] ; then
     while [ -z $PODNAME ]
     do
         PODNAME=`kubectl get po -o=name --field-selector=status.phase=Running -n keti-opencsd | grep storage-engine-instance`
-        echo $PODNAME
         PODNAME="${PODNAME:4}"
     done
     kubectl logs $PODNAME -n keti-opencsd -f interface-module

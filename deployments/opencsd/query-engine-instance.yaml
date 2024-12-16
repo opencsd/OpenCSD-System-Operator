@@ -57,7 +57,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: STORAGE_ENGINE_DNS
-            value: "storage-engine-instance-svc.keti-opencsd.svc.cluster.local" # 네임스페이스 가변
+            value: "storage-engine-interface-svc.keti-opencsd.svc.cluster.local" # 네임스페이스 가변
       volumes:
         - name: tz-config
           hostPath:

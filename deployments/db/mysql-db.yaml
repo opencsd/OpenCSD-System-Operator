@@ -12,6 +12,20 @@ spec:
   selector:
     app: mysql
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: keti-mysql # 가변
+  labels:
+    app: mysql
+data:
+   my.cnf: | # 전달받은 인자로 내용 구성
+     [mysqld]
+     user=mysql
+     plugin-load-add = ha_rocksdb.so
+     default-storage-engine=rocksdb
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -48,7 +62,7 @@ spec:
           volumeMounts:
             - name: opencsd-ssd-lvm
               mountPath: /var/lib/mysql
-            - name: myrocks-cm
+            - name: mysql-config
               mountPath: /etc/mysql
       volumes:
         - name: opencsd-ssd-lvm
@@ -57,18 +71,4 @@ spec:
             path: /mnt/lvm/keti-mysql
         - name: mysql-config
           configMap:
-            name: myrocks-cm
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mysql-config
-  namespace: keti-mysql # 가변
-  labels:
-    app: mysql
-data:
-   my.cnf: | # 전달받은 인자로 내용 구성
-     [mysqld]
-     user=mysql
-     plugin-load-add = ha_rocksdb.so
-     default-storage-engine=rocksdb
+            name: mysql-config
