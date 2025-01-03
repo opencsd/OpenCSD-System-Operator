@@ -21,13 +21,11 @@ Developed by KETI
 
 
 ## Requirement
--------------
 >   Kubernetes 1.26 <br>
 >   Containerd 1.6.21 <br>
 
 
 ## Operation Node Requirement
--------------
 ```bash
 kubectl label nodes operator-node key=worker
 kubectl label nodes operator-node layer=operator
@@ -35,7 +33,6 @@ kubectl label node operator-node node-role.kubernetes.io/worker=
 ```
 
 ## How To Install
--------------
 ```bash
 git clone
 cd System-Operator
@@ -54,7 +51,6 @@ keti-opencsd            validator-779844f95c-7n6lz                  1/1     Runn
 ```
 
 ## How To Debug
--------------
 ```bash
 ./0.debug.sh q # query engine
 ./0.debug.sh i # storage engine - interface
@@ -64,6 +60,5 @@ keti-opencsd            validator-779844f95c-7n6lz                  1/1     Runn
 
 
 ## Governance
--------------
 This work was supported by Institute of Information & communications Technology Planning & Evaluation (IITP) grant funded by the Korea government(MSIT) (No.2021-0-00862, Development of DBMS storage engine technology to minimize massive data movement)
 
