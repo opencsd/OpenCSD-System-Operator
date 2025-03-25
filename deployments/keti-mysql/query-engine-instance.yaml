@@ -2,14 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: query-engine-instance-svc
-  namespace: keti-opencsd # 네임스페이스 가변
+  namespace: keti-mysql # 네임스페이스 가변
 spec:
   type: NodePort
   ports:
   - port: 40100
     targetPort: 40100 
     protocol: TCP
-    nodePort: 30100 # 노드포트(고유값) 가변
+    nodePort: 30101 # 노드포트(고유값) 가변
   selector:
     app: query-engine-instance
 ---
@@ -19,7 +19,7 @@ metadata:
   labels:
     app: query-engine-instance
   name: query-engine-instance
-  namespace: keti-opencsd # 네임스페이스 가변
+  namespace: keti-mysql # 네임스페이스 가변
 spec:
   selector:
     matchLabels:
@@ -42,6 +42,11 @@ spec:
           volumeMounts:
             - name: tz-config
               mountPath: /etc/localtime
+            - name: host-sys
+              mountPath: /host/sys
+            - name: host-proc
+              mountPath: /host/proc
+              readOnly: true
           resources: # 가변
             requests:
               memory: "128Mi"
@@ -52,13 +57,23 @@ spec:
           env:
           - name: LOG_LEVEL
             value: "INFO"
+          - name: INSTANCE_TYPE
+            value: "MYSQL"
           - name: INSTANCE_NAME
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: STORAGE_ENGINE_DNS
-            value: "storage-engine-interface-svc.keti-opencsd.svc.cluster.local" # 네임스페이스 가변
+            value: "mysql-dbms-svc.keti-mysql.svc.cluster.local" # 네임스페이스 가변
       volumes:
         - name: tz-config
           hostPath:
             path: /usr/share/zoneinfo/Asia/Seoul
+        - name: host-sys
+          hostPath:
+            path: /sys
+        - name: host-proc
+          hostPath:
+            path: /proc
+        
+            

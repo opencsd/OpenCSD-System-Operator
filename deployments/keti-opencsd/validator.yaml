@@ -6,15 +6,18 @@ metadata:
   labels:
     name: validator
 spec:
+  type: NodePort
   ports:
   - name: main
     port: 40000
     targetPort: 40000
     protocol: TCP
+    nodePort: 30000 # 노드포트(고유값) 가변
   - name: qemu
     port: 40001
     targetPort: 40001
     protocol: TCP
+    nodePort: 30001 # 노드포트(고유값) 가변
   selector:
     app: validator
 ---
